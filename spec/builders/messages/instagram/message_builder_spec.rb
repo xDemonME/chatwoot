@@ -54,6 +54,9 @@ describe Messages::Instagram::MessageBuilder do
 
       message = instagram_inbox.messages.first
       expect(message.content).to eq('This is the first message from the customer')
+      expect(instagram_inbox.conversations.first.additional_attributes).to include(
+        'ig_account_id' => messaging['recipient']['id']
+      )
     end
 
     it 'discard echo message already sent by chatwoot' do
@@ -228,11 +231,16 @@ describe Messages::Instagram::MessageBuilder do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
       existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
-                                                    contact_id: contact.id, status: :open)
+                                                    contact_id: contact.id, status: :open,
+                                                    additional_attributes: { 'custom_key' => 'custom_value' })
 
       described_class.new(messaging, instagram_inbox).perform
 
       expect(instagram_inbox.conversations.last.id).to eq(existing_conversation.id)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'custom_key' => 'custom_value',
+        'ig_account_id' => messaging['recipient']['id']
+      )
     end
 
     it 'creates a new conversation if last conversation is resolved' do
@@ -270,7 +278,8 @@ describe Messages::Instagram::MessageBuilder do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
       existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
-                                                    contact_id: contact.id, status: :resolved)
+                                                    contact_id: contact.id, status: :resolved,
+                                                    additional_attributes: { 'custom_key' => 'custom_value' })
 
       initial_count = Conversation.count
       messaging = dm_params[:entry][0]['messaging'][0]
@@ -279,6 +288,10 @@ describe Messages::Instagram::MessageBuilder do
 
       expect(instagram_inbox.conversations.last.id).to eq(existing_conversation.id)
       expect(Conversation.count).to eq(initial_count)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'custom_key' => 'custom_value',
+        'ig_account_id' => messaging['recipient']['id']
+      )
     end
   end
 

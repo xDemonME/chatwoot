@@ -46,6 +46,10 @@ describe Messages::Instagram::Messenger::MessageBuilder do
 
       expect(contact.name).to eq('Jane Dae')
       expect(message.content).to eq('This is the first message from the customer')
+      expect(instagram_messenger_inbox.conversations.first.additional_attributes).to include(
+        'type' => 'instagram_direct_message',
+        'ig_account_id' => messaging['recipient']['id']
+      )
     end
 
     it 'discard echo message already sent by chatwoot' do
@@ -254,7 +258,7 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         inbox_id: instagram_messenger_inbox.id,
         contact_id: contact.id,
         status: :open,
-        additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en' }
+        additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en', custom_key: 'custom_value' }
       )
 
       described_class.new(message, instagram_messenger_inbox).perform
@@ -262,6 +266,12 @@ describe Messages::Instagram::Messenger::MessageBuilder do
       instagram_messenger_inbox.reload
 
       expect(instagram_messenger_inbox.conversations.last.id).to eq(existing_conversation.id)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'type' => 'instagram_direct_message',
+        'conversation_language' => 'en',
+        'custom_key' => 'custom_value',
+        'ig_account_id' => message['recipient']['id']
+      )
     end
 
     it 'creates a new conversation if last conversation is resolved' do
@@ -319,7 +329,7 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         inbox_id: instagram_messenger_inbox.id,
         contact_id: contact.id,
         status: :resolved,
-        additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en' }
+        additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en', custom_key: 'custom_value' }
       )
 
       inital_count = Conversation.count
@@ -330,6 +340,12 @@ describe Messages::Instagram::Messenger::MessageBuilder do
 
       expect(instagram_messenger_inbox.conversations.last.id).to eq(existing_conversation.id)
       expect(Conversation.count).to eq(inital_count)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'type' => 'instagram_direct_message',
+        'conversation_language' => 'en',
+        'custom_key' => 'custom_value',
+        'ig_account_id' => message['recipient']['id']
+      )
     end
   end
 

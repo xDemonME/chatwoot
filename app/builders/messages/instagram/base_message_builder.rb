@@ -62,7 +62,11 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
 
   def set_conversation_based_on_inbox_config
     if @inbox.lock_to_single_conversation
-      find_conversation_scope.order(created_at: :desc).first || build_conversation
+      last_conversation = find_conversation_scope.order(created_at: :desc).first
+      return build_conversation if last_conversation.nil?
+
+      merge_conversation_additional_attributes!(last_conversation)
+      last_conversation
     else
       find_or_build_for_multiple_conversations
     end
@@ -76,6 +80,7 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
     last_conversation = find_conversation_scope.where.not(status: :resolved).order(created_at: :desc).first
     return build_conversation if last_conversation.nil?
 
+    merge_conversation_additional_attributes!(last_conversation)
     last_conversation
   end
 
@@ -142,7 +147,7 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
   end
 
   def additional_conversation_attributes
-    {}
+    { ig_account_id: instagram_account_id }
   end
 
   def conversation_params
@@ -151,6 +156,17 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
       inbox_id: @inbox.id,
       contact_id: contact.id
     }
+  end
+
+  def instagram_account_id
+    @outgoing_echo ? sender_id : recipient_id
+  end
+
+  def merge_conversation_additional_attributes!(conversation)
+    merged_attributes = (conversation.additional_attributes || {}).deep_merge(additional_conversation_attributes.stringify_keys)
+    return if merged_attributes == conversation.additional_attributes
+
+    conversation.update!(additional_attributes: merged_attributes)
   end
 
   def message_params
