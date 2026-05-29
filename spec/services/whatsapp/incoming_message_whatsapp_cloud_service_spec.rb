@@ -6,12 +6,14 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
       Redis::Alfred.scan_each(match: 'MESSAGE_SOURCE_KEY::*') { |key| Redis::Alfred.delete(key) }
     end
 
+    let(:whatsapp_business_account_id) { '987654321' }
     let!(:whatsapp_channel) { create(:channel_whatsapp, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false) }
     let(:params) do
       {
         phone_number: whatsapp_channel.phone_number,
         object: 'whatsapp_business_account',
         entry: [{
+          id: whatsapp_business_account_id,
           changes: [{
             value: {
               contacts: [{ profile: { name: 'Sojan Jose' }, wa_id: '2423423243' }],
@@ -42,6 +44,17 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
         expect_message_has_attachment
       end
 
+      it 'stores whatsapp business account id in conversation additional attributes' do
+        stub_media_url_request
+        stub_sample_png_request
+
+        described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+
+        expect(whatsapp_channel.inbox.conversations.last.additional_attributes).to include(
+          'whatsapp_business_account_id' => whatsapp_business_account_id
+        )
+      end
+
       it 'increments reauthorization count if fetching attachment fails' do
         stub_request(
           :get,
@@ -56,6 +69,51 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
         expect(whatsapp_channel.inbox.messages.first.content).to eq('Check out my product!')
         expect(whatsapp_channel.inbox.messages.first.attachments.present?).to be false
         expect(whatsapp_channel.authorization_error_count).to eq(1)
+      end
+    end
+
+    context 'when conversation already exists' do
+      let(:text_params) do
+        {
+          phone_number: whatsapp_channel.phone_number,
+          object: 'whatsapp_business_account',
+          entry: [{
+            id: whatsapp_business_account_id,
+            changes: [{
+              value: {
+                contacts: [{ profile: { name: 'Sojan Jose' }, wa_id: '2423423243' }],
+                messages: [{
+                  from: '2423423243',
+                  id: 'wamid.TEXT_MESSAGE_ID',
+                  text: { body: 'Test' },
+                  timestamp: '1664799904',
+                  type: 'text'
+                }]
+              }
+            }]
+          }]
+        }.with_indifferent_access
+      end
+
+      it 'merges whatsapp business account id without overwriting unrelated additional attributes' do
+        contact_inbox = create(:contact_inbox, inbox: whatsapp_channel.inbox, source_id: '2423423243')
+        conversation = create(
+          :conversation,
+          inbox: whatsapp_channel.inbox,
+          contact_inbox: contact_inbox,
+          additional_attributes: {
+            'custom_key' => 'custom_value',
+            'source_id' => 'existing_source_id'
+          }
+        )
+
+        described_class.new(inbox: whatsapp_channel.inbox, params: text_params).perform
+
+        expect(conversation.reload.additional_attributes).to include(
+          'custom_key' => 'custom_value',
+          'source_id' => 'existing_source_id',
+          'whatsapp_business_account_id' => whatsapp_business_account_id
+        )
       end
     end
 

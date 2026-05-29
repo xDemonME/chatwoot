@@ -28,6 +28,6 @@ class Messages::Instagram::Messenger::MessageBuilder < Messages::Instagram::Base
   end
 
   def additional_conversation_attributes
-    { type: 'instagram_direct_message' }
+    super.merge(type: 'instagram_direct_message')
   end
 end

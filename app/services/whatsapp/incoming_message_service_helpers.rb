@@ -8,7 +8,8 @@ module Whatsapp::IncomingMessageServiceHelpers
       account_id: @inbox.account_id,
       inbox_id: @inbox.id,
       contact_id: @contact.id,
-      contact_inbox_id: @contact_inbox.id
+      contact_inbox_id: @contact_inbox.id,
+      additional_attributes: whatsapp_conversation_additional_attributes
     }
   end
 
@@ -73,5 +74,31 @@ module Whatsapp::IncomingMessageServiceHelpers
     return false if messages_data.blank?
 
     Whatsapp::MessageDedupLock.new(messages_data.first[:id]).acquire!
+  end
+
+  def whatsapp_conversation_additional_attributes
+    additional_attributes = {}
+    referral_attributes = messages_data.first[:referral]&.to_h&.deep_stringify_keys
+    additional_attributes['referral'] = referral_attributes if referral_attributes.present?
+
+    waba_id = whatsapp_business_account_id
+    additional_attributes['whatsapp_business_account_id'] = waba_id if waba_id.present?
+
+    additional_attributes
+  end
+
+  def merge_conversation_additional_attributes!(conversation)
+    additional_attributes = whatsapp_conversation_additional_attributes
+    return if additional_attributes.blank?
+
+    merged_attributes = (conversation.additional_attributes || {}).deep_merge(additional_attributes)
+    return if merged_attributes == conversation.additional_attributes
+
+    conversation.update!(additional_attributes: merged_attributes)
+  end
+
+  def whatsapp_business_account_id
+    entry = params[:entry]&.first || params['entry']&.first
+    entry&.[](:id) || entry&.[]('id')
   end
 end
