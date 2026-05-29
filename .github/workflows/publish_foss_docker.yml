@@ -18,6 +18,9 @@ on:
 env:
   DOCKER_REPO: xdemonme/chatwoot
 
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:

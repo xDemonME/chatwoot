@@ -52,7 +52,7 @@ describe Whatsapp::IncomingMessageService do
         described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
 
         expect(whatsapp_channel.inbox.conversations.last.additional_attributes).to include(
-          'whatsapp_referral' => {
+          'referral' => {
             'source_url' => 'https://fb.me/AAAAA',
             'source_id' => '1234567890',
             'source_type' => 'ad',
@@ -90,7 +90,7 @@ describe Whatsapp::IncomingMessageService do
         expect(conversation.reload.additional_attributes).to include(
           'custom_key' => 'custom_value',
           'source_id' => 'existing_source_id',
-          'whatsapp_referral' => {
+          'referral' => {
             'source_url' => 'https://fb.me/AAAAA',
             'source_type' => 'ad'
           }
