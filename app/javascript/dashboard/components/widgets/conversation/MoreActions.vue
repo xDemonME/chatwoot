@@ -5,6 +5,8 @@ import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
+import { frontendURL } from 'dashboard/helper/URLHelper';
+import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import EmailTranscriptModal from './EmailTranscriptModal.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
 import ButtonV4 from 'dashboard/components-next/button/Button.vue';
@@ -51,8 +53,26 @@ const actionMenuItems = computed(() => {
     value: 'send_transcript',
   });
 
+  items.push({
+    icon: 'i-lucide-code',
+    label: t('CONTACT_PANEL.COPY_EMBED_CODE'),
+    action: 'copy_embed_code',
+    value: 'copy_embed_code',
+  });
+
   return items;
 });
+
+const copyEmbedCode = () => {
+  const accountId = store.getters.getCurrentAccountId;
+  const path = frontendURL(
+    `accounts/${accountId}/embed/conversations/${currentChat.value.id}`
+  );
+  const embedUrl = `${window.location.origin}${path}`;
+  const snippet = `<iframe src="${embedUrl}" style="width:100%;height:100%;border:0" allow="clipboard-write"></iframe>`;
+  copyTextToClipboard(snippet);
+  useAlert(t('CONTACT_PANEL.EMBED_CODE_COPIED'));
+};
 
 const handleActionClick = ({ action }) => {
   toggleDropdown(false);
@@ -65,6 +85,8 @@ const handleActionClick = ({ action }) => {
     useAlert(t('CONTACT_PANEL.UNMUTED_SUCCESS'));
   } else if (action === 'send_transcript') {
     toggleEmailModal();
+  } else if (action === 'copy_embed_code') {
+    copyEmbedCode();
   }
 };
 

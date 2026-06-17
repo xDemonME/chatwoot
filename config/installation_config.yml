@@ -524,6 +524,11 @@
   value: 180
   locked: false
   description: 'Token expiry in days'
+- name: EMBED_FRAME_ANCESTORS
+  display_title: 'Embeddable Conversation Frame Ancestors'
+  value: "'self'"
+  locked: false
+  description: "Space separated CSP frame-ancestors allowed to embed conversation pages (/embed/) in an iframe. e.g. 'self' https://*.example.com"
 ## ------ End of Customizations for Customers ------ ##
 
 ## ----- LLM Observability ---- ##

@@ -32,6 +32,7 @@ class DashboardController < ActionController::Base
   around_action :switch_locale
   before_action :ensure_installation_onboarding, only: [:index]
   before_action :render_hc_if_custom_domain, only: [:index]
+  before_action :allow_iframe_embed, if: :embeddable_request?
   before_action :ensure_html_format
   layout 'vueapp'
 
@@ -64,6 +65,22 @@ class DashboardController < ActionController::Base
 
     @locale = @portal.default_locale
     render 'public/api/v1/portals/show', layout: 'portal', portal: @portal and return
+  end
+
+  # Allow embedding conversation pages (/embed/) in an iframe. Login/auth pages are
+  # also included so the unauthenticated redirect renders inside the iframe instead
+  # of being blocked. X-Frame-Options is removed (it has no allow-list) and the CSP
+  # frame-ancestors directive is used instead. In CSP2+ browsers frame-ancestors
+  # overrides any X-Frame-Options injected by a reverse proxy.
+  def embeddable_request?
+    path = request.path
+    path.include?('/embed/') || path.include?('/login') || path.include?('/auth')
+  end
+
+  def allow_iframe_embed
+    ancestors = GlobalConfigService.load('EMBED_FRAME_ANCESTORS', "'self'").presence || "'self'"
+    response.headers.delete('X-Frame-Options')
+    response.headers['Content-Security-Policy'] = "frame-ancestors #{ancestors}"
   end
 
   def app_config

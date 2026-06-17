@@ -2,6 +2,7 @@
 import { frontendURL } from '../../../helper/URLHelper';
 import store from '../../../store';
 import ConversationView from './ConversationView.vue';
+import EmbedConversationView from './EmbedConversationView.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -235,3 +236,22 @@ export default {
     },
   ],
 };
+
+// Standalone embeddable conversation view. Mounted as a top-level route (outside
+// the dashboard AppContainer) so it renders without the sidebar/chat list.
+export const embedRoutes = [
+  {
+    path: frontendURL(
+      'accounts/:accountId/embed/conversations/:conversation_id'
+    ),
+    name: 'embed_conversation',
+    meta: {
+      permissions: CONVERSATION_PERMISSIONS,
+    },
+    component: EmbedConversationView,
+    props: route => ({
+      conversationId: route.params.conversation_id,
+      showContactPanel: route.query.contactPanel === '1',
+    }),
+  },
+];

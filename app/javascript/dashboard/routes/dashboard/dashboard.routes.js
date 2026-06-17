@@ -1,5 +1,7 @@
 import settings from './settings/settings.routes';
-import conversation from './conversation/conversation.routes';
+import conversation, {
+  embedRoutes as conversationEmbedRoutes,
+} from './conversation/conversation.routes';
 import { routes as searchRoutes } from '../../modules/search/search.routes';
 import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
@@ -32,6 +34,7 @@ export default {
         ...campaignsRoutes.routes,
       ],
     },
+    ...conversationEmbedRoutes,
     {
       path: frontendURL('accounts/:accountId/onboarding'),
       name: 'onboarding_account_details',

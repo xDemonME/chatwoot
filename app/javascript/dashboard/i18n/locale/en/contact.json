@@ -53,6 +53,8 @@
     "MUTED_SUCCESS": "This contact is blocked successfully. You will not be notified of any future conversations.",
     "UNMUTED_SUCCESS": "This contact is unblocked successfully.",
     "SEND_TRANSCRIPT": "Send Transcript",
+    "COPY_EMBED_CODE": "Copy embed code",
+    "EMBED_CODE_COPIED": "Embed code copied to clipboard",
     "EDIT_LABEL": "Edit",
     "SIDEBAR_SECTIONS": {
       "CUSTOM_ATTRIBUTES": "Custom Attributes",
