@@ -30,6 +30,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    hideBackButton: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return { activeIndex: 0 };
@@ -99,7 +103,7 @@ export default {
     <ConversationHeader
       v-if="currentChat.id"
       :chat="currentChat"
-      :show-back-button="isOnExpandedLayout && !isInboxView"
+      :show-back-button="isOnExpandedLayout && !isInboxView && !hideBackButton"
       :class="{
         'border-b border-b-n-weak !pt-2': !dashboardApps.length,
       }"

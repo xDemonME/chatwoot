@@ -66,6 +66,7 @@ onMounted(() => {
   <section class="flex w-full h-full min-w-0 bg-n-background">
     <ConversationBox
       is-on-expanded-layout
+      hide-back-button
       :is-contact-panel-open="showContactPanel"
     />
   </section>
