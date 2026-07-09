@@ -132,6 +132,84 @@ FactoryBot.define do
     initialize_with { attributes }
   end
 
+  factory :instagram_message_referral_event, class: Hash do
+    transient do
+      ig_entry_id { SecureRandom.uuid }
+      sender_id { "Sender-id-#{SecureRandom.hex(4)}" }
+    end
+    entry do
+      [
+        {
+          'id': ig_entry_id,
+          'time': '2021-09-08T06:35:04+0000',
+          'messaging': [
+            {
+              'sender': {
+                'id': sender_id
+              },
+              'recipient': {
+                'id': 'chatwoot-app-user-id-1'
+              },
+              'timestamp': '2021-09-08T06:34:04+0000',
+              'message': {
+                'mid': 'message-id-referral',
+                'text': 'This is message with ad referral',
+                'referral': {
+                  'ref': 'summer_sale',
+                  'ad_id': '120214560000000',
+                  'source': 'ADS',
+                  'type': 'OPEN_THREAD',
+                  'ads_context_data': {
+                    'ad_title': 'Summer Sale',
+                    'photo_url': 'https://www.example.com/ad-photo.jpg',
+                    'video_url': 'https://www.example.com/ad-video.mp4'
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    end
+    initialize_with { attributes }
+  end
+
+  factory :instagram_message_shop_referral_event, class: Hash do
+    transient do
+      ig_entry_id { SecureRandom.uuid }
+      sender_id { "Sender-id-#{SecureRandom.hex(4)}" }
+    end
+    entry do
+      [
+        {
+          'id': ig_entry_id,
+          'time': '2021-09-08T06:35:04+0000',
+          'messaging': [
+            {
+              'sender': {
+                'id': sender_id
+              },
+              'recipient': {
+                'id': 'chatwoot-app-user-id-1'
+              },
+              'timestamp': '2021-09-08T06:34:04+0000',
+              'message': {
+                'mid': 'message-id-shop-referral',
+                'text': 'This is message with shop referral',
+                'referral': {
+                  'product': {
+                    'id': '1234567890123456'
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    end
+    initialize_with { attributes }
+  end
+
   factory :instagram_test_text_event, class: Hash do
     transient do
       ig_entry_id { SecureRandom.uuid }
