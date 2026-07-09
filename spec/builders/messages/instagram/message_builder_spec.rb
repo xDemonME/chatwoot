@@ -17,6 +17,8 @@ describe Messages::Instagram::MessageBuilder do
   let!(:shared_reel_params) { build(:instagram_shared_reel_event).with_indifferent_access }
   let!(:instagram_story_reply_event) { build(:instagram_story_reply_event).with_indifferent_access }
   let!(:instagram_message_reply_event) { build(:instagram_message_reply_event).with_indifferent_access }
+  let!(:referral_ads_params) { build(:instagram_message_referral_event).with_indifferent_access }
+  let!(:referral_shop_params) { build(:instagram_message_shop_referral_event).with_indifferent_access }
 
   describe '#perform' do
     before do
@@ -54,6 +56,49 @@ describe Messages::Instagram::MessageBuilder do
 
       message = instagram_inbox.messages.first
       expect(message.content).to eq('This is the first message from the customer')
+    end
+
+    it 'stores ad referral metadata in message content attributes' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+      described_class.new(messaging, instagram_inbox).perform
+
+      message = instagram_inbox.messages.first
+      expect(message.content_attributes[:referral]).to eq(
+        {
+          'ref' => 'summer_sale',
+          'ad_id' => '120214560000000',
+          'source' => 'ADS',
+          'type' => 'OPEN_THREAD',
+          'ads_context_data' => {
+            'ad_title' => 'Summer Sale',
+            'photo_url' => 'https://www.example.com/ad-photo.jpg',
+            'video_url' => 'https://www.example.com/ad-video.mp4'
+          }
+        }
+      )
+    end
+
+    it 'stores shop product referral metadata in message content attributes' do
+      messaging = referral_shop_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+      described_class.new(messaging, instagram_inbox).perform
+
+      message = instagram_inbox.messages.first
+      expect(message.content_attributes[:referral]).to eq({ 'product' => { 'id' => '1234567890123456' } })
+    end
+
+    it 'does not store referral metadata in content attributes for outgoing echo messages' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      sender_id = messaging['sender']['id']
+      messaging['sender']['id'] = instagram_channel.instagram_id
+      messaging['recipient']['id'] = sender_id
+      create_instagram_contact_for_sender(sender_id, instagram_inbox)
+
+      described_class.new(messaging, instagram_inbox, outgoing_echo: true).perform
+
+      message = instagram_inbox.messages.first
+      expect(message.content_attributes).not_to have_key(:referral)
     end
 
     it 'discard echo message already sent by chatwoot' do
