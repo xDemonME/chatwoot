@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_11_184600) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_07_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -989,6 +989,33 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_11_184600) do
     t.index ["user_id"], name: "index_mentions_on_user_id"
   end
 
+  create_table "message_reactions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "message_id", null: false
+    t.string "sender_type"
+    t.bigint "sender_id"
+    t.string "actor_external_id"
+    t.string "source_id"
+    t.string "external_message_id", null: false
+    t.string "emoji"
+    t.string "reaction_type"
+    t.integer "direction", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "external_created_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_message_reactions_on_account_id"
+    t.index ["conversation_id"], name: "index_message_reactions_on_conversation_id"
+    t.index ["inbox_id"], name: "index_message_reactions_on_inbox_id"
+    t.index ["message_id", "direction", "external_message_id", "actor_external_id"], name: "idx_message_reactions_on_logical_identity", unique: true, where: "(actor_external_id IS NOT NULL)"
+    t.index ["message_id"], name: "index_message_reactions_on_message_id"
+    t.index ["sender_type", "sender_id"], name: "index_message_reactions_on_sender"
+    t.index ["source_id"], name: "index_message_reactions_on_source_id", unique: true, where: "(source_id IS NOT NULL)"
+  end
+
   create_table "messages", id: :serial, force: :cascade do |t|
     t.text "content"
     t.integer "account_id", null: false
@@ -1346,6 +1373,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_11_184600) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "message_reactions", "accounts"
+  add_foreign_key "message_reactions", "conversations"
+  add_foreign_key "message_reactions", "inboxes"
+  add_foreign_key "message_reactions", "messages"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
