@@ -18,6 +18,19 @@ describe Messages::Instagram::Messenger::MessageBuilder do
   let!(:instagram_message_reply_event) { build(:instagram_message_reply_event).with_indifferent_access }
   let!(:referral_ads_params) { build(:instagram_message_referral_event).with_indifferent_access }
   let!(:referral_shop_params) { build(:instagram_message_shop_referral_event).with_indifferent_access }
+  let(:ad_referral_payload) do
+    {
+      'ref' => 'summer_sale',
+      'ad_id' => '120214560000000',
+      'source' => 'ADS',
+      'type' => 'OPEN_THREAD',
+      'ads_context_data' => {
+        'ad_title' => 'Summer Sale',
+        'photo_url' => 'https://www.example.com/ad-photo.jpg',
+        'video_url' => 'https://www.example.com/ad-video.mp4'
+      }
+    }
+  end
   let(:fb_object) { double }
 
   describe '#perform' do
@@ -92,6 +105,31 @@ describe Messages::Instagram::Messenger::MessageBuilder do
 
       message = instagram_messenger_inbox.messages.first
       expect(message.content_attributes).not_to have_key(:referral)
+    end
+
+    it 'stores ad referral metadata in conversation additional attributes for a new conversation' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['sender']['id'], instagram_messenger_inbox)
+
+      described_class.new(messaging, instagram_messenger_inbox).perform
+
+      instagram_messenger_inbox.reload
+
+      expect(instagram_messenger_inbox.conversations.first.additional_attributes).to include(
+        'type' => 'instagram_direct_message',
+        'referral' => ad_referral_payload
+      )
+    end
+
+    it 'does not store referral metadata in additional attributes for outgoing echo messages' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['recipient']['id'], instagram_messenger_inbox)
+
+      described_class.new(messaging, instagram_messenger_inbox, outgoing_echo: true).perform
+
+      instagram_messenger_inbox.reload
+
+      expect(instagram_messenger_inbox.conversations.first.additional_attributes).not_to have_key('referral')
     end
 
     it 'discard echo message already sent by chatwoot' do
@@ -313,6 +351,32 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         'conversation_language' => 'en',
         'custom_key' => 'custom_value',
         'ig_account_id' => message['recipient']['id']
+      )
+    end
+
+    it 'merges referral metadata into an existing conversation without overwriting unrelated attributes' do
+      message = referral_ads_params[:entry][0]['messaging'][0]
+      sender_id = message['sender']['id']
+      contact = create_instagram_contact_for_sender(sender_id, instagram_messenger_inbox)
+
+      existing_conversation = create(
+        :conversation,
+        account_id: account.id,
+        inbox_id: instagram_messenger_inbox.id,
+        contact_id: contact.id,
+        status: :open,
+        additional_attributes: { type: 'instagram_direct_message', custom_key: 'custom_value' }
+      )
+
+      described_class.new(message, instagram_messenger_inbox).perform
+
+      instagram_messenger_inbox.reload
+
+      expect(instagram_messenger_inbox.conversations.last.id).to eq(existing_conversation.id)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'type' => 'instagram_direct_message',
+        'custom_key' => 'custom_value',
+        'referral' => ad_referral_payload
       )
     end
 
