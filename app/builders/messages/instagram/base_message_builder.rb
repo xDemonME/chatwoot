@@ -153,7 +153,9 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
   end
 
   def additional_conversation_attributes
-    { ig_account_id: instagram_account_id }
+    attrs = { ig_account_id: instagram_account_id }
+    attrs[:referral] = referral_attributes if referral_attributes.present?
+    attrs
   end
 
   def conversation_params

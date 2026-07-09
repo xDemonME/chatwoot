@@ -104,6 +104,26 @@ describe Messages::Instagram::MessageBuilder do
       expect(message.content_attributes).not_to have_key(:referral)
     end
 
+    it 'stores ad referral metadata in conversation additional attributes for a new conversation' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+
+      described_class.new(messaging, instagram_inbox).perform
+
+      expect(instagram_inbox.conversations.first.additional_attributes).to include(
+        'referral' => messaging['message']['referral'].to_h.deep_stringify_keys
+      )
+    end
+
+    it 'does not store referral metadata in additional attributes for outgoing echo messages' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      create_instagram_contact_for_sender(messaging['recipient']['id'], instagram_inbox)
+
+      described_class.new(messaging, instagram_inbox, outgoing_echo: true).perform
+
+      expect(instagram_inbox.conversations.first.additional_attributes).not_to have_key('referral')
+    end
+
     it 'discard echo message already sent by chatwoot' do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
@@ -285,6 +305,22 @@ describe Messages::Instagram::MessageBuilder do
       expect(existing_conversation.reload.additional_attributes).to include(
         'custom_key' => 'custom_value',
         'ig_account_id' => messaging['recipient']['id']
+      )
+    end
+
+    it 'merges referral metadata into an existing conversation without overwriting unrelated attributes' do
+      messaging = referral_ads_params[:entry][0]['messaging'][0]
+      contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+      existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
+                                                    contact_id: contact.id, status: :open,
+                                                    additional_attributes: { 'custom_key' => 'custom_value' })
+
+      described_class.new(messaging, instagram_inbox).perform
+
+      expect(instagram_inbox.conversations.last.id).to eq(existing_conversation.id)
+      expect(existing_conversation.reload.additional_attributes).to include(
+        'custom_key' => 'custom_value',
+        'referral' => messaging['message']['referral'].to_h.deep_stringify_keys
       )
     end
 
