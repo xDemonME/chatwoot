@@ -3,6 +3,7 @@ import conversation, {
   embedRoutes as conversationEmbedRoutes,
 } from './conversation/conversation.routes';
 import { routes as searchRoutes } from '../../modules/search/search.routes';
+import { routes as callRoutes } from './calls/routes';
 import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
 import { routes as notificationRoutes } from './notifications/routes';
@@ -27,6 +28,7 @@ export default {
         ...inboxRoutes,
         ...conversation.routes,
         ...settings.routes,
+        ...callRoutes,
         ...contactRoutes,
         ...companyRoutes,
         ...searchRoutes,
