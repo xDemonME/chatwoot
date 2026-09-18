@@ -11,7 +11,7 @@ class Webhooks::InstagramEventsJob < MutexApplicationJob
   retry_on_lock_conflict wait: ->(executions) { executions.seconds }, attempts: 3, on_exhaustion: :process_without_lock
 
   # @return [Array] We will support further events like seen in future
-  SUPPORTED_EVENTS = [:message, :read, :reaction].freeze
+  SUPPORTED_EVENTS = [:message, :read, :reaction, :postback].freeze
 
   def perform(entries)
     @entries = entries
@@ -144,6 +144,14 @@ class Webhooks::InstagramEventsJob < MutexApplicationJob
 
   def reaction(messaging, channel)
     ::Instagram::ReactionService.new(params: messaging, channel: channel).perform
+  end
+
+  def postback(messaging, channel)
+    postback_message = {
+      mid: messaging[:postback][:mid],
+      text: messaging[:postback][:title]
+    }
+    message(messaging.merge(message: postback_message), channel)
   end
 
   def messages(entry)

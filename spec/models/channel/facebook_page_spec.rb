@@ -37,10 +37,25 @@ RSpec.describe Channel::FacebookPage do
   end
 
   describe '#subscribe' do
+    let(:channel) { build(:channel_facebook_page) }
+
     it 'subscribes to Messenger reaction events' do
       expect(Facebook::Messenger::Subscriptions).to receive(:subscribe).with(
-        access_token: channel.page_access_token,
-        subscribed_fields: include('message_reactions')
+        hash_including(
+          access_token: channel.page_access_token,
+          subscribed_fields: include('message_reactions')
+        )
+      )
+
+      channel.subscribe
+    end
+
+    it 'subscribes to messaging postbacks' do
+      expect(Facebook::Messenger::Subscriptions).to receive(:subscribe).with(
+        hash_including(
+          access_token: channel.page_access_token,
+          subscribed_fields: include('messaging_postbacks')
+        )
       )
 
       channel.subscribe
