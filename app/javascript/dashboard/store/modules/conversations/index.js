@@ -24,6 +24,7 @@ const state = {
   syncConversationsMessages: {},
   conversationFilters: {},
   copilotAssistant: {},
+  autoTranslating: {},
 };
 
 const getConversationById = _state => conversationId => {
@@ -299,6 +300,13 @@ export const mutations = {
         reaction.id === messageReaction.id ? messageReaction : reaction
       );
     }
+  },
+
+  [types.SET_AUTO_TRANSLATING](_state, { locale, messageIds, translating }) {
+    _state.autoTranslating[locale] ??= {};
+    messageIds.forEach(id => {
+      _state.autoTranslating[locale][id] = translating;
+    });
   },
 
   [types.ADD_CONVERSATION](_state, conversation) {
